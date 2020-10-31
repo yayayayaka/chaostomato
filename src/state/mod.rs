@@ -88,7 +88,6 @@ impl State {
             Err(_) => {
                 // Not present in state
                 let pomodoro = Session::new_break(message, creator, start_time, duration)?;
-                dbg!("pomodoro state {:?}", &pomodoro.state);
                 self.add_session_to_queue(pomodoro);
                 Ok(())
             }
@@ -139,16 +138,10 @@ impl State {
             .unwrap()
             .insert(cache_key.clone(), pomodoro.duration);
 
-        if let Some((session, key)) = self
-            .entries
+        self.entries
             .lock()
             .unwrap()
-            .insert(cache_key, (pomodoro, delay_key))
-        {
-            dbg!(format!("Insert returned {:?} and {:?}", session, key));
-        } else {
-            dbg!("Insert returned None");
-        }
+            .insert(cache_key, (pomodoro, delay_key));
     }
 
     /// Attempt to add a user to the latest registered chat

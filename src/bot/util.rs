@@ -109,7 +109,8 @@ This bot supports multiplayer mode!
 Create a /25 in a group and a button will show up for others \
 to join. As soon as the clock hits `minute % 5 == 0`, you will be pinged to start your session.
 
-Created with 🥰🦀 by @yayayayaka",
+Made with 🥰🦀 by @yayayayaka
+https://github.com/yayayayaka/chaostomato",
                 bot_username
             ),
         )
