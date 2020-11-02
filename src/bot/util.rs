@@ -7,6 +7,7 @@ use tbot::{
 
 use crate::{markup::inline, state::State, time};
 
+
 /// Register a new Pomodoro
 pub(crate) async fn create_pomodoro(bot: &Bot, state: Arc<State>, chat: Chat, from_user: User) {
     let message_content = match chat.kind {
@@ -103,6 +104,8 @@ pub(crate) async fn send_help_text(bot: &Bot, chat_id: chat::Id) {
 Commands:
 /25 — Create a new Timer with a duration of 25 minutes.
 /5 — Initiate a short 5 minute break
+/join — Join a session
+/leave — Leave a session
 /help — Show this help message.
 
 This bot supports multiplayer mode!

@@ -71,20 +71,29 @@ async fn end_pomodoro(bot: &Bot, state: Arc<State>, mut pomodoro: Session) {
 }
 
 async fn end_break(bot: &Bot, pomodoro: Session) {
-    join!(
-        async {
-            if let Err(err_msg) = bot
-                .delete_message(pomodoro.chat().id, pomodoro.message().id)
-                .call()
-                .await
-            {
-                dbg!(err_msg.to_string());
-            }
-        },
-        async {
+    match pomodoro.message.chat.kind {
+        chat::Kind::Private { .. } => {
+            join!(
+                async {
+                    if let Err(err_msg) = bot
+                        .delete_message(pomodoro.chat().id, pomodoro.message().id)
+                        .call()
+                        .await
+                    {
+                        dbg!(err_msg.to_string());
+                    }
+                },
+                async {
+                    if let Err(err_msg) = pomodoro.notify_participants_on_break_end(&bot).await {
+                        dbg!(err_msg.to_string());
+                    }
+                },
+            );
+        }
+        _ => {
             if let Err(err_msg) = pomodoro.notify_participants_on_break_end(&bot).await {
                 dbg!(err_msg.to_string());
             }
-        },
-    );
+        }
+    }
 }

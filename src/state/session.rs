@@ -8,6 +8,7 @@ use crate::{markup, time};
 
 use super::session_state::SessionState;
 
+
 /// A struct that holds a Session
 ///
 /// A Session is distinguished by it's session state. A session can represent either:
@@ -191,20 +192,33 @@ impl Session {
             self.string_of_subscribed_usernames()
         );
 
-        let (delete_message_result, send_message_result) = join!(
-            bot.delete_message(self.message.chat.id, self.message.id)
-                .call(),
-            bot.send_message(self.message.chat.id, &text).call(),
-        );
-        if let Err(err) = delete_message_result {
-            dbg!(err.to_string());
-        }
-        match send_message_result {
-            Ok(message) => {
-                self.message = message.to_owned();
-                Ok(message)
+        match self.message.chat.kind {
+            chat::Kind::Group { .. } | chat::Kind::Supergroup { .. } => {
+                match bot.send_message(self.message.chat.id, &text).call().await {
+                    Ok(message) => {
+                        self.message = message.to_owned();
+                        Ok(message)
+                    }
+                    Err(err) => Err(err),
+                }
             }
-            Err(err) => Err(err),
+            _ => {
+                let (delete_message_result, send_message_result) = join!(
+                    bot.delete_message(self.message.chat.id, self.message.id)
+                        .call(),
+                    bot.send_message(self.message.chat.id, &text).call(),
+                );
+                if let Err(err) = delete_message_result {
+                    dbg!(err.to_string());
+                }
+                match send_message_result {
+                    Ok(message) => {
+                        self.message = message.to_owned();
+                        Ok(message)
+                    }
+                    Err(err) => Err(err),
+                }
+            }
         }
     }
 
@@ -212,21 +226,31 @@ impl Session {
         &self,
         bot: &Bot,
     ) -> Result<types::Message, MethodCall> {
-        let msg = &format!(
-            "{} \
-            \
-            Break is over. Do you want to continue?",
-            self.string_of_subscribed_usernames()
-        );
-        let (delete_message_result, send_message_result) = join!(
-            bot.delete_message(self.message.chat.id, self.message.id)
-                .call(),
-            bot.send_message(self.message.chat.id, msg)
-                .reply_markup(markup::inline::ASK_TO_CONTINUE)
-                .call()
-        );
-        delete_message_result?;
-        send_message_result
+        let msg = match self.message.chat.kind {
+            chat::Kind::Group { .. } | chat::Kind::Supergroup { .. } => format!(
+                "{}\n\n\
+                Break is over!",
+                self.string_of_subscribed_usernames()
+            ),
+            _ => format!("Break is over! Do you want to continue?"),
+        };
+
+        match self.message.chat.kind {
+            chat::Kind::Group { .. } | chat::Kind::Supergroup { .. } => {
+                bot.send_message(self.message.chat.id, &msg).call().await
+            }
+            _ => {
+                let (delete_message_result, send_message_result) = join!(
+                    bot.delete_message(self.message.chat.id, self.message.id)
+                        .call(),
+                    bot.send_message(self.message.chat.id, &msg)
+                        .reply_markup(markup::inline::ASK_TO_CONTINUE)
+                        .call()
+                );
+                delete_message_result?;
+                send_message_result
+            }
+        }
     }
 
     /// Return a String of all subscribed usernames
