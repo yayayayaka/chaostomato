@@ -8,6 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  BOT_TOKEN: "1234567890:ABCDE_FGH"
 
 jobs:
   build:
